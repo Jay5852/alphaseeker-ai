@@ -1,0 +1,12 @@
+pandas>=2.2.0
+numpy>=1.26.0
+yfinance>=0.2.36
+streamlit>=1.35.0
+plotly>=5.22.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# ML (Upgrade B Meta-Labeler + Phase 2 validation)
+lightgbm>=4.0.0
+scikit-learn>=1.4.0
+

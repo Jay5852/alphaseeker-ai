@@ -1,0 +1,17 @@
+# Render Blueprint: AlphaSeeker AI Web Terminal
+# Deploys the Streamlit dashboard as a free web service.
+services:
+  - type: web
+    name: alphaseeker-ai
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run dashboard/app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      # Add your real values in Render Dashboard -> Environment (do NOT commit secrets)
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false

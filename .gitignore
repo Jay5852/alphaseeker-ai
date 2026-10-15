@@ -1,0 +1,21 @@
+# Secrets & local environment
+.env
+
+# Databases (trade history stays local; backed up separately)
+*.db
+*.sqlite3
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Local data caches (regenerated automatically)
+data/cache/
+data_cache/
+
+# Editor / OS junk
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

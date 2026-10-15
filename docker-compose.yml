@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # 1. Interactive Web Dashboard
+  web:
+    build: .
+    container_name: alphaseeker-dashboard
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      - ./data/cache:/app/data/cache
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 2. Autonomous Background Scanner (Executes scheduled scans & Telegram alerts)
+  scanner:
+    build: .
+    container_name: alphaseeker-daemon
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data/cache:/app/data/cache
+      - ./data:/app/data
+    # Runs an automated scan every 4 hours or on market triggers
+    command: >
+      bash -c "while true; do
+        echo '🚀 Running Autonomous Scheduled Market Scan...';
+        python main.py --market US --timeframe swing --source live_active;
+        python main.py --market US --timeframe intraday --source live_gainers;
+        echo 'Sleeping for 4 hours until next scheduled market cycle...';
+        sleep 14400;
+      done"
