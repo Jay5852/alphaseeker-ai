@@ -1,0 +1,13 @@
+# Railway configuration (Config as Code)
+# https://docs.railway.com/guides/config-as-code
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Streamlit built-in health endpoint
+healthcheckPath = "/_stcore/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
