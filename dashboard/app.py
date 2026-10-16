@@ -7,6 +7,18 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 import streamlit as st
+import os
+
+# Streamlit Cloud exposes secrets via st.secrets, but settings.py reads os.getenv.
+# Bridge them so Telegram works on Streamlit Cloud without breaking local .env usage.
+if hasattr(st, "secrets"):
+    for _key in ("TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"):
+        try:
+            if _key in st.secrets and not os.getenv(_key):
+                os.environ[_key] = str(st.secrets[_key])
+        except Exception:
+            pass
+
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
