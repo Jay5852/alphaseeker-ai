@@ -185,7 +185,7 @@ with tab_screener:
 
     col_btn1, col_btn2 = st.columns([1, 4])
     with col_btn1:
-        run_scan = st.button("🚀 Run AI Screener", type="primary", use_container_width=True)
+        run_scan = st.button("🚀 Run AI Screener", type="primary", width='stretch')
 
     if run_scan or "last_results" not in st.session_state:
         with st.spinner("Analyzing multi-timeframe charts and calculating risk models..."):
@@ -228,7 +228,7 @@ with tab_screener:
             table_data.append(t_row)
 
         df_table = pd.DataFrame(table_data)
-        st.dataframe(df_table, use_container_width=True)
+        st.dataframe(df_table, width='stretch')
 
         # Candidate Detail & Interactive Chart Viewer
         st.divider()
@@ -296,7 +296,7 @@ with tab_screener:
                             "Implied Vol": f"{u.implied_volatility:.1f}%",
                             "In The Money": "✅ ITM" if u.in_the_money else "OTM"
                         })
-                    st.dataframe(pd.DataFrame(uo_list), use_container_width=True)
+                    st.dataframe(pd.DataFrame(uo_list), width='stretch')
             else:
                 st.info(opt_report.summary)
 
@@ -362,12 +362,12 @@ with tab_screener:
                     margin=dict(l=20, r=20, t=40, b=20)
                 )
 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
         # Action dispatch buttons
         col_act1, col_act2, col_act3 = st.columns([1, 1, 2])
         with col_act1:
-            if st.button("📥 Track in Portfolio", type="primary", use_container_width=True):
+            if st.button("📥 Track in Portfolio", type="primary", width='stretch'):
                 res = virtual_broker.open_position(
                     ticker=selected_c.ticker,
                     entry_price=ticket.entry_price,
@@ -386,7 +386,7 @@ with tab_screener:
                     st.warning(res["message"])
 
         with col_act2:
-            if st.button("📤 Dispatch to Telegram", use_container_width=True):
+            if st.button("📤 Dispatch to Telegram", width='stretch'):
                 sent = telegram_notifier.send_trade_ticket(
                     selected_c.ticket,
                     pattern_name=selected_c.pattern,
@@ -414,7 +414,7 @@ with tab_backtest:
     with col_bt3:
         st.write("")
         st.write("")
-        run_bt = st.button("Run Simulation", type="primary", use_container_width=True)
+        run_bt = st.button("Run Simulation", type="primary", width='stretch')
 
     if run_bt or "last_bt" not in st.session_state:
         with st.spinner(f"Simulating trade executions on {test_ticker}..."):
@@ -444,7 +444,7 @@ with tab_backtest:
                 "Outcome": t.outcome,
                 "Holding Days": t.holding_days
             })
-        st.dataframe(pd.DataFrame(trades_list), use_container_width=True)
+        st.dataframe(pd.DataFrame(trades_list), width='stretch')
     elif bt:
         st.info(f"No trades triggered on {test_ticker} during the {test_period} window under these specific entry rules.")
 
@@ -455,7 +455,7 @@ with tab_value:
 
     col_vg1, col_vg2 = st.columns([1, 4])
     with col_vg1:
-        run_value_scan = st.button("🔍 Scan for Value-Growth", type="primary", use_container_width=True)
+        run_value_scan = st.button("🔍 Scan for Value-Growth", type="primary", width='stretch')
 
     if run_value_scan or "last_vg_results" not in st.session_state:
         with st.spinner("Analyzing balance sheets, PEG ratios, and cash flows..."):
@@ -480,7 +480,7 @@ with tab_value:
                 "Lynch Score": f"{v.peter_lynch_score:.0f}/100",
                 "Verdict": v.valuation_verdict
             })
-        st.dataframe(pd.DataFrame(vg_table), use_container_width=True)
+        st.dataframe(pd.DataFrame(vg_table), width='stretch')
 
         st.divider()
         st.subheader("📰 Live Financial News & Catalyst Analyzer")
@@ -548,7 +548,7 @@ with tab_macro:
             "Filing Date": pt.filing_date,
             "Committee Context / Catalyst": pt.rationale_context
         })
-    st.dataframe(pd.DataFrame(pol_table), use_container_width=True)
+    st.dataframe(pd.DataFrame(pol_table), width='stretch')
 
     st.divider()
 
@@ -562,7 +562,7 @@ with tab_macro:
             insider_res = macro_smart_money.get_sec_insider_activity(insider_search_ticker)
 
         if insider_res["has_data"] and insider_res["records"]:
-            st.dataframe(pd.DataFrame(insider_res["records"]), use_container_width=True)
+            st.dataframe(pd.DataFrame(insider_res["records"]), width='stretch')
         else:
             st.info(f"No recent Form 4 insider filings found for {insider_search_ticker} via the active feed.")
 
@@ -617,7 +617,7 @@ with tab_ledger:
     # 2. Controls & Auto-Update
     col_ctrl1, col_ctrl2 = st.columns([2, 3])
     with col_ctrl1:
-        if st.button("🔄 Check Live Prices & Auto-Trail Stops", type="primary", use_container_width=True):
+        if st.button("🔄 Check Live Prices & Auto-Trail Stops", type="primary", width='stretch'):
             with st.spinner("Polling live market quotes and evaluating stop/target triggers..."):
                 events = virtual_broker.update_all_positions()
                 if events:
@@ -660,7 +660,7 @@ with tab_ledger:
                 "Unrealized P&L": f"{currency_symbol}{p['unrealized_pnl']:+,.2f} ({p['unrealized_pct']:+.2f}%)",
                 "Entry Date": p["entry_date"]
             })
-        st.dataframe(pd.DataFrame(active_table), use_container_width=True)
+        st.dataframe(pd.DataFrame(active_table), width='stretch')
 
         # Quick close manual selector
         col_cl1, col_cl2 = st.columns([2, 1])
@@ -672,7 +672,7 @@ with tab_ledger:
         with col_cl2:
             st.write("")
             st.write("")
-            if st.button("Close Position", type="secondary", use_container_width=True):
+            if st.button("Close Position", type="secondary", width='stretch'):
                 trade_id_val = int(trade_to_close.split(" - ")[0].replace("#", ""))
                 res = virtual_broker.close_position_manually(trade_id_val)
                 if res["success"]:
@@ -698,7 +698,7 @@ with tab_ledger:
             m_t2 = st.number_input("Target 2 Price", min_value=0.01, value=148.0, step=0.5)
 
         m_pattern = st.selectbox("Setup Type", ["Minervini Stage 2", "15m ORB Breakout", "VCP Consolidation", "Peter Lynch Value", "Manual Discretionary"])
-        if st.button("📥 Add to Active Portfolio Tracker", use_container_width=True):
+        if st.button("📥 Add to Active Portfolio Tracker", width='stretch'):
             res = virtual_broker.open_position(
                 ticker=m_ticker,
                 entry_price=m_entry,
@@ -739,7 +739,7 @@ with tab_ledger:
                     "Return (%)": f"{ct['return_pct']:+.2f}%",
                     "Exit Reason": ct["exit_reason"]
                 })
-            st.dataframe(pd.DataFrame(cl_table), use_container_width=True)
+            st.dataframe(pd.DataFrame(cl_table), width='stretch')
 
     with col_logs:
         st.subheader("📋 Trailing Stop & Action Logs")

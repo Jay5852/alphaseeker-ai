@@ -1,12 +1,73 @@
-"""Universal Market Data Provider for US & Indian (NSE) stocks."""
+"""Universal Market Data Provider for US & Indian (NSE) stocks.
+
+Uses curl_cffi with browser impersonation as the primary data source to bypass
+Yahoo Finance "Invalid Crumb" / HTTP 401 blocking on cloud IPs (Streamlit Cloud,
+Railway, Render, etc.). Falls back to yfinance if curl_cffi is unavailable.
+"""
 
 import logging
 from typing import Optional, Dict
 import pandas as pd
 import yfinance as yf
+from curl_cffi import requests as curl_requests
 from data.base import MarketDataProvider
 
 logger = logging.getLogger(__name__)
+
+# Browser-impersonating session to bypass Yahoo Finance crumb/401 blocking on cloud IPs
+_browser_session = curl_requests.Session(impersonate="chrome")
+
+
+def _fetch_yahoo_chart(ticker: str, range_param: str = "1y", interval: str = "1d") -> pd.DataFrame:
+    """Fetch Yahoo Finance chart data using curl_cffi browser impersonation.
+    Bypasses the 'Invalid Crumb' / 401 errors that affect cloud IPs.
+    """
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
+    params = {"range": range_param, "interval": interval}
+    try:
+        resp = _browser_session.get(url, params=params, timeout=30)
+        if resp.status_code != 200:
+            logger.warning(f"Yahoo chart API returned {resp.status_code} for {ticker}")
+            return pd.DataFrame()
+        data = resp.json()
+        result = data.get("chart", {}).get("result", [None])[0]
+        if result is None:
+            return pd.DataFrame()
+
+        timestamps = result.get("timestamp", [])
+        indicators = result.get("indicators", {}).get("quote", [{}])[0]
+
+        df = pd.DataFrame({
+            "Open": indicators.get("open", []),
+            "High": indicators.get("high", []),
+            "Low": indicators.get("low", []),
+            "Close": indicators.get("close", []),
+            "Volume": indicators.get("volume", []),
+        }, index=pd.to_datetime(timestamps, unit="s", utc=True))
+
+        df.index.name = "Date"
+        return df.dropna(subset=["Close"])
+    except Exception as e:
+        logger.error(f"Error fetching chart data for {ticker}: {e}")
+        return pd.DataFrame()
+
+
+def _fetch_latest_quote_curl(ticker: str) -> dict:
+    """Fetch latest quote using curl_cffi browser impersonation."""
+    try:
+        df = _fetch_yahoo_chart(ticker, range_param="1d", interval="1d")
+        if not df.empty:
+            last_row = df.iloc[-1]
+            prev_row = df.iloc[-2] if len(df) > 1 else last_row
+            currency = "INR" if ".NS" in ticker else "USD"
+            return {
+                "last_price": float(last_row["Close"]),
+                "previous_close": float(prev_row["Close"]),
+                "currency": currency,
+            }
+    except Exception as e:
+        logger.error(f"Error fetching latest quote (curl) for {ticker}: {e}")
+    return {"last_price": 0.0, "previous_close": 0.0, "currency": "USD"}
 
 
 class UniversalDataProvider(MarketDataProvider):
@@ -50,13 +111,20 @@ class UniversalDataProvider(MarketDataProvider):
         if cache_key in self._cache:
             return self._cache[cache_key].copy()
 
+        # Primary: curl_cffi browser impersonation (bypasses Yahoo 401 on cloud)
+        df = _fetch_yahoo_chart(ticker, range_param=period, interval="1d")
+        if not df.empty:
+            self._cache[cache_key] = df
+            return df
+
+        # Fallback: yfinance
         try:
             raw = yf.download(
                 tickers=ticker,
                 period=period,
                 interval="1d",
                 progress=False,
-                auto_adjust=True
+                auto_adjust=True,
             )
             df = self._clean_df(raw)
             if not df.empty:
@@ -72,13 +140,20 @@ class UniversalDataProvider(MarketDataProvider):
         if cache_key in self._cache:
             return self._cache[cache_key].copy()
 
+        # Primary: curl_cffi browser impersonation
+        df = _fetch_yahoo_chart(ticker, range_param=period, interval=interval)
+        if not df.empty:
+            self._cache[cache_key] = df
+            return df
+
+        # Fallback: yfinance
         try:
             raw = yf.download(
                 tickers=ticker,
                 period=period,
                 interval=interval,
                 progress=False,
-                auto_adjust=True
+                auto_adjust=True,
             )
             df = self._clean_df(raw)
             if not df.empty:
@@ -90,6 +165,12 @@ class UniversalDataProvider(MarketDataProvider):
 
     def get_latest_quote(self, ticker: str) -> dict:
         """Fetch latest price snapshot."""
+        # Primary: curl_cffi chart API
+        quote = _fetch_latest_quote_curl(ticker)
+        if quote["last_price"] > 0:
+            return quote
+
+        # Fallback: yfinance Ticker
         try:
             t = yf.Ticker(ticker)
             fast_info = getattr(t, "fast_info", None)
@@ -106,11 +187,11 @@ class UniversalDataProvider(MarketDataProvider):
                 return {
                     "last_price": float(last_row["Close"]),
                     "previous_close": float(prev_row["Close"]),
-                    "currency": "INR" if ".NS" in ticker else "USD"
+                    "currency": "INR" if ".NS" in ticker else "USD",
                 }
         except Exception as e:
             logger.error(f"Error fetching latest quote for {ticker}: {e}")
-            
+
         return {"last_price": 0.0, "previous_close": 0.0, "currency": "USD"}
 
 

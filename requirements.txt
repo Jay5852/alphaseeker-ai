@@ -10,3 +10,6 @@ requests>=2.31.0
 lightgbm>=4.0.0
 scikit-learn>=1.4.0
 
+# curl_cffi: browser-impersonation HTTP client to bypass Yahoo Finance 401 on cloud IPs
+curl-cffi>=0.16.0
+
