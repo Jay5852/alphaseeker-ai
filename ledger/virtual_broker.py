@@ -84,7 +84,7 @@ class VirtualBroker:
                     entry_date, entry_price, shares, remaining_shares,
                     initial_stop, current_stop, target_1, target_2,
                     pattern, notes
-                ) VALUES (?, ?, ?, ?, 'OPEN', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, 'OPEN', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 ticker.upper(), market.upper(), timeframe.upper(), direction.upper(),
                 now_str, entry_price, shares, shares,

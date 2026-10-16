@@ -19,6 +19,12 @@ if hasattr(st, "secrets"):
         except Exception:
             pass
 
+# Silence yfinance log spam: Yahoo blocks some endpoints (quoteSummary) from
+# cloud IPs. Those calls fail gracefully inside their try/except blocks, but the
+# repeated warnings flood the Streamlit Cloud logs.
+import logging
+logging.getLogger("yfinance").setLevel(logging.CRITICAL)
+
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -68,6 +74,20 @@ st.markdown("""
 # ---------------- SIDEBAR CONTROLS ----------------
 st.sidebar.title("⚡ AlphaSeeker AI")
 st.sidebar.caption("Dual-Engine Quantitative Stock Finder")
+
+# ---------------- TELEGRAM STATUS ----------------
+if telegram_notifier.enabled:
+    st.sidebar.success("✅ Telegram: connected")
+else:
+    st.sidebar.warning("⚠️ Telegram: secrets not loaded")
+if st.sidebar.button("📨 Send Test Telegram Alert"):
+    test_ok = telegram_notifier.send_message(
+        "✅ *AlphaSeeker AI test alert*\nTelegram integration is live from Streamlit Cloud."
+    )
+    if test_ok:
+        st.sidebar.success("Test alert sent! Check your Telegram.")
+    else:
+        st.sidebar.error("Failed to send. Check app logs for details.")
 
 market_choice = st.sidebar.selectbox(
     "Target Market",
@@ -202,6 +222,14 @@ with tab_screener:
         st.warning("No setups met the criteria right now. Market may be consolidated or filtered out by strict R:R requirements.")
     else:
         st.success(f"Found **{len(results)} high-conviction trade setups** matching institutional risk criteria.")
+
+        # Push a scan summary to Telegram (only on explicit "Run AI Screener" click)
+        if run_scan:
+            top_tickers = ", ".join(f"`{c.ticker}`" for c in results[:5])
+            telegram_notifier.send_message(
+                f"🔍 *Screener Alert ({st.session_state['last_type']} • {'US' if is_us else 'INDIA'})*\n"
+                f"Found *{len(results)}* high-conviction setups: {top_tickers}"
+            )
 
         # Results Table
         table_data = []
